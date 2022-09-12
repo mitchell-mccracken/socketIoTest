@@ -13,12 +13,23 @@
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages > li { padding: 0.5rem 1rem; }
       #messages > li:nth-child(odd) { background: #efefef; }
+
+      #status {
+        position: absolute;
+        right: 10px;
+        top: 10 px;
+      }
+
     </style>
   </head>
   <body>
+    
+    <label for="" class='' id="userCount"> </label>
+    <label for="" class='right' id="status"> </label>
+    
     <ul id="messages"></ul>
     <form id="form" action="">
-      <input id="input" autocomplete="off" /><button>Send</button>
+      <input id="input" autocomplete="off" onkeyup="statusUpdating()"/><button>Send</button>
     </form>
     <script src="/socket.io/socket.io.js"></script>
 
@@ -28,6 +39,9 @@
       var messages = document.getElementById('messages');
       var form = document.getElementById('form');
       var input = document.getElementById('input');
+      // let lastUpdate = new Date();
+      let lastUpdate;
+      let userCount;
 
       form.addEventListener('submit', function(e) {
         e.preventDefault();
@@ -37,12 +51,54 @@
         }
       });
 
+      //message sent
       socket.on('chat message', function(msg) {
         var item = document.createElement('li');
         item.textContent = msg;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
       });
+
+      //update info when user joins chat
+      socket.on('userJoined', (data) => {
+        const {numOfUsers, userName} = data;
+        socket.userName = userName;     //save userName
+        updateUserCount(numOfUsers);
+      });
+
+      //update info when user leaves chat
+      socket.on('userLeft', (numOfUsers) => {
+        updateUserCount(numOfUsers);
+        console.log('someone left');
+        userCount = numOfUsers;
+      });
+
+
+
+
+      //----------------
+      //HELPER FUNCTIONS
+      //----------------
+
+      function statusUpdating() {
+        const message = 'user typing';
+        document.getElementById('status').innerText = message;
+
+        const now = new Date().getTime();
+        lastUpdate = now;
+
+        setTimeout( () => {
+          if ( new Date().getTime() - lastUpdate > 500 ) {
+            document.getElementById('status').innerText = '';
+          }
+        },
+        1000)
+      }
+
+      function updateUserCount( num ) {
+        document.getElementById('userCount').innerText = `Users in chat: ${num}`;
+      };
+
     </script>
   </body>
 </html>
